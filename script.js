@@ -1,4 +1,4 @@
-// script.js - Final and Complete Robust Version (Cleaned for Bio Card and Page Refresh)
+// script.js - Final and Complete Robust Version with Mobile Touch Support
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -24,6 +24,26 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.textContent = message;
         statusMessage.className = `status-msg ${isProcessing ? 'processing' : ''}`;
     };
+
+    /**
+     * NEW UTILITY: Gets coordinates from either Mouse or Touch event
+     */
+    const getCoords = (e) => {
+        if (e.touches && e.touches.length) {
+            // Return the coordinates of the first touch point (mobile)
+            return {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY
+            };
+        } else {
+            // Return mouse coordinates (desktop)
+            return {
+                x: e.clientX,
+                y: e.clientY
+            };
+        }
+    };
+
 
     /**
      * Calculates the actual displayed width, height, and offsets of the video player.
@@ -100,42 +120,63 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // --- 2. Dragging & Resizing Setup ---
-    cropBox.addEventListener('mousedown', (e) => {
-        if (!e.target.classList.contains('handle')) {
+    // --- 2. Dragging & Resizing Setup (Unified Start Function) ---
+
+    const startInteraction = (e) => {
+        // ***** CRITICAL FIX: Prevent default action (scrolling/zooming) on interaction start *****
+        e.preventDefault(); 
+
+        const coords = getCoords(e);
+        startX = coords.x;
+        startY = coords.y;
+        startW = cropBox.offsetWidth;
+        startH = cropBox.offsetHeight;
+        startBoxX = cropBox.offsetLeft;
+        startBoxY = cropBox.offsetTop;
+
+        if (e.target === cropBox) {
+            // Started on the box itself (Dragging)
             isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            startBoxX = cropBox.offsetLeft;
-            startBoxY = cropBox.offsetTop;
-            e.preventDefault(); 
+        } else if (e.target.classList.contains('handle')) {
+            // Started on a handle (Resizing)
+            isResizing = true;
+            activeHandle = e.target;
         }
-    });
+
+        // Add document listeners to handle movement outside the box
+        document.addEventListener('mousemove', moveInteraction);
+        document.addEventListener('mouseup', endInteraction);
+        document.addEventListener('touchmove', moveInteraction); // NEW
+        document.addEventListener('touchend', endInteraction);   // NEW
+    };
+
+    // Attach start listeners to the crop box and handles for both mouse and touch
+    cropBox.addEventListener('mousedown', startInteraction);
+    cropBox.addEventListener('touchstart', startInteraction); // NEW
 
     document.querySelectorAll('.handle').forEach(handle => {
-        handle.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            activeHandle = handle;
-            startX = e.clientX;
-            startY = e.clientY;
-            startW = cropBox.offsetWidth;
-            startH = cropBox.offsetHeight;
-            startBoxX = cropBox.offsetLeft;
-            startBoxY = cropBox.offsetTop;
-            e.preventDefault();
-        });
+        handle.addEventListener('mousedown', startInteraction);
+        handle.addEventListener('touchstart', startInteraction); // NEW
     });
 
-    // --- 3. Mouse Move Logic ---
-    document.addEventListener('mousemove', (e) => {
+
+    // --- 3. Move Logic (Unified) ---
+    const moveInteraction = (e) => {
+        if (!isDragging && !isResizing) return;
+        
+        // ***** CRITICAL FIX: Prevent default action (scrolling) during movement *****
+        e.preventDefault(); 
+        
         const wrapperRect = videoWrapper.getBoundingClientRect();
         const wrapperWidth = wrapperRect.width;
         const wrapperHeight = wrapperRect.height;
         
+        const coords = getCoords(e);
+        const dx = coords.x - startX;
+        const dy = coords.y - startY;
+        
         // Handle Dragging
         if (isDragging) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
             let newX = startBoxX + dx;
             let newY = startBoxY + dy;
 
@@ -154,9 +195,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Handle Resizing 
         if (isResizing && activeHandle) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
             let newW = startW;
             let newH = startH;
             let newX = startBoxX;
@@ -185,11 +223,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // --- Comprehensive Clamping for Resizing ---
-            if (newX < 0) { newW -= (0 - newX); newX = 0; }
+            if (newX < 0) { newW += newX; newX = 0; } // If left boundary exceeded, move x to 0 and adjust width
             if (newX + newW > wrapperWidth) { newW = wrapperWidth - newX; }
-            if (newY < 0) { newH -= (0 - newY); newY = 0; }
+            if (newY < 0) { newH += newY; newY = 0; } // If top boundary exceeded, move y to 0 and adjust height
             if (newY + newH > wrapperHeight) { newH = wrapperHeight - newY; }
             
+            // Re-clamp minimum size after boundary check
             newW = Math.max(minSize, newW);
             newH = Math.max(minSize, newH);
 
@@ -205,15 +244,22 @@ document.addEventListener('DOMContentLoaded', () => {
             cropPercent.left = (newX / wrapperWidth) * 100;
             cropPercent.top = (newY / wrapperHeight) * 100;
         }
-    });
+    };
 
-    document.addEventListener('mouseup', () => {
+    // --- 4. End Logic (Unified) ---
+    const endInteraction = () => {
         isDragging = false;
         isResizing = false;
         activeHandle = null;
-    });
+
+        // Remove document listeners
+        document.removeEventListener('mousemove', moveInteraction);
+        document.removeEventListener('mouseup', endInteraction);
+        document.removeEventListener('touchmove', moveInteraction);
+        document.removeEventListener('touchend', endInteraction);
+    };
     
-    // --- 4. Crop and Upload to Server Logic (with Page Refresh) ---
+    // --- 5. Crop and Upload to Server Logic (No change needed here) ---
     cropButton.addEventListener('click', async () => {
         if (!videoFile.files[0]) {
             setStatus('Please upload a video first.', false);
@@ -301,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 setStatus('Crop complete! Download started. Refreshing page in 3 seconds...', false);
                 
-                // ADDITION: Refresh the page after a short delay
+                // Refresh the page after a short delay
                 setTimeout(() => {
                     window.location.reload();
                 }, 3000); 
