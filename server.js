@@ -1,4 +1,5 @@
-// server.js
+// server.js - OPTIMIZED for FFmpeg Processing Speed
+
 const express = require('express');
 const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
@@ -40,29 +41,35 @@ app.post('/crop', upload.single('videoFile'), (req, res) => {
     console.log(`Crop Filter: ${cropWidth}:${cropHeight}:${cropX}:${cropY}`);
 
     try {
-        // Use fluent-ffmpeg to execute the command
         ffmpeg(inputPath)
             // Apply the crop filter: format is 'w:h:x:y'
             .videoFilters(`crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`)
-            // Use H.264 codec and copy the audio stream (faster)
+            
+            // >>> SPEED OPTIMIZATION PARAMETERS ADDED HERE <<<
             .videoCodec('libx264')
-            .audioCodec('copy')
+            .audioCodec('aac')
+            .addOptions([
+                // '-preset ultrafast' is the single biggest speed boost on low-CPU servers
+                '-preset ultrafast', 
+                // '-crf 28' is a higher compression (lower quality) but much faster encoding
+                '-crf 28', 
+                // '-pix_fmt yuv420p' ensures maximum compatibility for web playback
+                '-pix_fmt yuv420p' 
+            ])
+            // >>> END OF OPTIMIZATION PARAMETERS <<<
+
             .on('end', () => {
                 console.log('FFmpeg processing finished.');
                 // 1. Send the file back to the client
                 res.download(outputPath, outputFileName, (err) => {
                     if (err) {
                         console.error('Download error:', err);
-                        // Clean up all files after download or error
-                        fs.unlinkSync(inputPath);
-                        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-                        if (!res.headersSent) {
-                            res.status(500).send('Error during download.');
-                        }
-                    } else {
-                         // 2. Clean up server files after successful download
-                        fs.unlinkSync(inputPath);
-                        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                    }
+                    // Clean up all files after download or error
+                    fs.unlinkSync(inputPath);
+                    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                    if (err && !res.headersSent) {
+                        res.status(500).send('Error during download.');
                     }
                 });
             })
@@ -71,12 +78,15 @@ app.post('/crop', upload.single('videoFile'), (req, res) => {
                 // Clean up files on error
                 fs.unlinkSync(inputPath);
                 if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-                res.status(500).send('Video processing failed.');
+                if (!res.headersSent) {
+                    res.status(500).send('Video processing failed.');
+                }
             })
             .save(outputPath);
 
     } catch (e) {
         console.error('General server error:', e);
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         res.status(500).send('An unexpected error occurred.');
     }
 });
