@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let cropPercent = { left: 0, top: 0, width: 80, height: 80 };
     const minSize = 50;
+    
+    // >>> NEW STATE VARIABLE: Lock interaction after successful crop
+    let isLocked = false; 
 
 
     const setStatus = (message, isProcessing = false) => {
@@ -123,6 +126,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. Dragging & Resizing Setup (Unified Start Function) ---
 
     const startInteraction = (e) => {
+        // >>> CRITICAL FIX: Block interaction if the process is finished/locked
+        if (isLocked) return;
+        
         // ***** CRITICAL FIX: Prevent default action (scrolling/zooming) on interaction start *****
         e.preventDefault(); 
 
@@ -147,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove', moveInteraction);
         document.addEventListener('mouseup', endInteraction);
         document.addEventListener('touchmove', moveInteraction); // NEW
-        document.addEventListener('touchend', endInteraction);   // NEW
+        document.addEventListener('touchend', endInteraction);  // NEW
     };
 
     // Attach start listeners to the crop box and handles for both mouse and touch
@@ -259,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.removeEventListener('touchend', endInteraction);
     };
     
-    // --- 5. Crop and Upload to Server Logic (No change needed here) ---
+    // --- 5. Crop and Upload to Server Logic (UPDATED with UX/Spinner and Lock-out) ---
     cropButton.addEventListener('click', async () => {
         if (!videoFile.files[0]) {
             setStatus('Please upload a video first.', false);
@@ -267,7 +273,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         cropButton.disabled = true;
-        setStatus('Uploading and processing on server...', true);
+
+        // >>> START OF UX OPTIMIZATION: Spinner and Expectation Setting <<<
+        let spinner = ['\\', '|', '/', '-'];
+        let i = 0;
+        const initialMessage = 'Processing video on server... Expect rapid results! Please wait.';
+
+        // Set initial status and class
+        setStatus(initialMessage + ' ' + spinner[i++ % 4], true);
+
+        // Start the spinner interval
+        const interval = setInterval(() => {
+            // Update spinner character while preserving the message
+            setStatus(initialMessage + ' ' + spinner[i++ % 4], true);
+        }, 150);
+        // >>> END OF UX OPTIMIZATION <<<
 
         const { displayW, displayH, offsetX, offsetY } = getDisplayedVideoDimensions();
         
@@ -322,13 +342,21 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('cropX', crop_x);
         formData.append('cropY', crop_y);
 
+        let response;
         try {
-            const response = await fetch('/crop', {
+            response = await fetch('/crop', {
                 method: 'POST',
                 body: formData,
             });
 
+            // Stop the spinner regardless of success or failure
+            clearInterval(interval); 
+
             if (response.ok) {
+                // >>> NEW LOCK-OUT STEP: Prevent further interaction
+                isLocked = true; 
+                cropBox.style.pointerEvents = 'none'; // Optional visual hint
+
                 // Trigger download
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
@@ -337,15 +365,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 a.href = url;
                 
                 a.download = response.headers.get('Content-Disposition') ? 
-                             response.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '') : 
-                             'cropped_video.mp4';
+                                response.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '') : 
+                                'cropped_video.mp4';
                 
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 a.remove();
                 
-                setStatus('Crop complete! Download started. Refreshing page in 3 seconds...', false);
+                // Final success message
+                setStatus('✅ Crop complete! Download started. Refreshing page in 3 seconds...', false);
                 
                 // Refresh the page after a short delay
                 setTimeout(() => {
@@ -354,13 +383,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
                 const errorText = await response.text();
-                setStatus(`Processing failed: ${errorText || 'Server Error'}`, false);
+                setStatus(`❌ Processing failed: ${errorText || 'Server Error'}`, false);
+                // On failure, remove the lock if it was accidentally set (though it shouldn't be)
+                isLocked = false; 
+                cropBox.style.pointerEvents = '';
             }
         } catch (error) {
+            // Stop spinner on network error
+            clearInterval(interval); 
             console.error('Fetch Error:', error);
-            setStatus('Network or server connection failed.', false);
+            setStatus('❌ Network or server connection failed.', false);
+            // On failure, remove the lock if it was accidentally set
+            isLocked = false;
+            cropBox.style.pointerEvents = '';
         } finally {
-            // Only re-enable the button if processing failed (not if refreshing)
+            // Only re-enable the button if we are not about to refresh
             if (!response || !response.ok) {
                 cropButton.disabled = false;
             }
