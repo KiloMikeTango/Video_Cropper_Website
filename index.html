@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoCropper PRO</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="cropper-container">
+        <h1>VideoCropper <span class="accent-text">Pro</span></h1>
+
+        <div id="upload-area" class="upload-area">
+            <input type="file" id="videoFile" accept="video/*" hidden>
+            <div class="upload-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-4H8V8h7v2h-3l2 2 2-2z" />
+                </svg>
+            </div>
+            <p class="upload-prompt">Drag & Drop or Click to Upload Video</p>
+            <button onclick="document.getElementById('videoFile').click()">Browse Files</button>
+        </div>
+
+        <div id="video-preview-area" class="video-preview-area hidden">
+
+            <div class="video-wrapper">
+                <video id="videoPlayer" controls muted></video>
+
+                <div id="cropBox" class="crop-box">
+                    <div class="handle top-left"></div>
+                    <div class="handle top-right"></div>
+                    <div class="handle bottom-left"></div>
+                    <div class="handle bottom-right"></div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+
+                <button id="cropButton" disabled>Process & Download</button>
+
+                <div id="statusMessage" class="status-msg">Upload a video to begin.</div>
+
+                <hr class="separator">
+                <div class="bio-card">
+                    <h2>Developer Info</h2>
+                    <p>
+                        My name is Kaung Myat Thu and I'm 17 years old. I'm currently studying for the GED, planning to
+                        take exams soon to get a passing score for December intake scholarships. Dealing with a serious
+                        challenge every day, I made this Website and am focused on this goal.
+                    </p>
+                    <p class="telegram-link">Telegram: <span class="accent-text">@Kilo532</span></p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

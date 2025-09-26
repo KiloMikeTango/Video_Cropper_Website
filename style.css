@@ -1,0 +1,306 @@
+/* style.css - Dark Mode Professional Redesign - FINAL VERSION with Bio Card and Dashed Crop Box */
+
+:root {
+    --primary-color: #0077ff;   /* Bright Blue */
+    --accent-color: #00ffaa;    /* Neon Green/Teal accent */
+    --bg-dark: #1e1e2f;         /* Dark background */
+    --bg-card: #2c2c40;         /* Slightly lighter card background */
+    --text-light: #f0f0f5;      /* Light text */
+    --text-muted: #a0a0b0;      /* Muted secondary text */
+    --border-radius: 12px;
+    --shadow-heavy: 0 15px 40px rgba(0, 0, 0, 0.4);
+    --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    margin: 0;
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.cropper-container {
+    background: var(--bg-dark);
+    border-radius: var(--border-radius);
+    padding: 40px;
+    width: 100%;
+    max-width: 1400px;
+}
+
+h1 {
+    text-align: center;
+    color: var(--text-light);
+    margin-bottom: 40px;
+    font-size: 2.5em;
+    font-weight: 700;
+}
+.accent-text {
+    color: var(--accent-color);
+}
+h2 {
+    color: var(--text-light);
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.3em;
+    font-weight: 500;
+    border-bottom: 1px solid var(--bg-card);
+    padding-bottom: 10px;
+}
+
+/* --- Upload Area Redesign --- */
+.upload-area {
+    text-align: center;
+    padding: 80px 30px;
+    border: 3px dashed var(--primary-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 40px;
+    transition: background-color 0.3s, border-color 0.3s;
+    background-color: var(--bg-card);
+    cursor: pointer;
+}
+.upload-area:hover {
+    background-color: #383852;
+    border-color: var(--accent-color);
+}
+
+.upload-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 15px;
+}
+.upload-icon svg {
+    fill: var(--primary-color);
+    width: 100%;
+    height: 100%;
+}
+.upload-prompt {
+    font-size: 1.2em;
+    color: var(--text-light);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.upload-area button {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border: none;
+    padding: 12px 30px;
+    font-size: 1em;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-weight: 600;
+}
+
+.upload-area button:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+/* --- Video Preview Area (Main Layout) --- */
+.video-preview-area {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 40px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.video-wrapper {
+    position: relative;
+    background-color: #000000;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-heavy);
+    padding-top: 56.25%; /* Standard 16:9 ratio */
+    overflow: hidden;
+}
+
+#videoPlayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* --- Crop Box (Dashed Style) --- */
+.crop-box {
+    position: absolute;
+    border: 2px dashed var(--accent-color); 
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75); 
+    cursor: grab;
+    z-index: 10;
+    box-sizing: border-box;
+}
+
+.crop-box::after {
+    /* Rule of Thirds Grid */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-shadow:
+        inset calc(100%/3) 0 0 0 rgba(255, 255, 255, 0.2),
+        inset calc(200%/3) 0 0 0 rgba(255, 255, 255, 0.2),
+        inset 0 calc(100%/3) 0 0 rgba(255, 255, 255, 0.2),
+        inset 0 calc(200%/3) 0 0 rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+}
+
+.handle {
+    position: absolute;
+    width: 12px; 
+    height: 12px;
+    background: var(--accent-color); 
+    border: 2px solid var(--bg-dark); 
+    border-radius: 50%;
+    z-index: 11;
+    opacity: 1;
+    transition: background-color 0.2s; 
+}
+.handle:hover {
+    background-color: var(--primary-color); 
+    transform: none;
+}
+
+/* Positioning handles */
+.top-left { top: -6px; left: -6px; cursor: nwse-resize; }
+.top-right { top: -6px; right: -6px; cursor: nesw-resize; }
+.bottom-left { bottom: -6px; left: -6px; cursor: nesw-resize; }
+.bottom-right { bottom: -6px; right: -6px; cursor: nwse-resize; }
+
+
+/* --- Controls Panel --- */
+.controls-panel {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+}
+
+#cropButton {
+    width: 100%;
+    padding: 18px;
+    background-color: var(--accent-color);
+    color: var(--bg-dark); 
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.2em;
+    cursor: pointer;
+    font-weight: 700;
+    transition: background-color 0.3s, transform 0.2s;
+    margin-bottom: 15px;
+}
+
+#cropButton:hover:not(:disabled) {
+    background-color: #00cc88;
+    transform: translateY(-2px);
+}
+
+#cropButton:disabled {
+    background-color: #404060;
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.status-msg {
+    margin-top: 10px; /* Adjusted spacing */
+    padding: 12px;
+    background-color: #1a1a2b;
+    border: 1px solid var(--primary-color);
+    color: var(--text-light);
+    border-radius: 6px;
+    font-weight: 500;
+    min-height: 20px;
+}
+.processing {
+    background-color: #0077ff40;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0px rgba(0, 119, 255, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 119, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 119, 255, 0); }
+}
+
+.separator {
+    border: none;
+    height: 1px;
+    background-color: #404060;
+    margin: 30px 0;
+}
+
+/* --- Personal Bio Card Styles --- */
+.bio-card {
+    padding: 15px;
+    background-color: #1e1e2f;
+    border-radius: 8px;
+    border: 1px solid #404060;
+}
+
+.bio-card h2 {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--primary-color);
+    border-bottom: 1px solid #404060;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+}
+
+.bio-card p {
+    font-size: 0.95em;
+    color: var(--text-light);
+    line-height: 1.5;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.telegram-link {
+    font-weight: 500;
+}
+
+.telegram-link .accent-text {
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+
+/* --- Responsive Design --- */
+@media (max-width: 992px) {
+    .video-preview-area {
+        grid-template-columns: 1fr; 
+        gap: 25px;
+    }
+    .cropper-container {
+        padding: 20px;
+    }
+}
+@media (max-width: 576px) {
+    body {
+        padding: 10px;
+    }
+    .cropper-container {
+        padding: 15px;
+    }
+    .upload-area {
+        padding: 50px 10px;
+    }
+}
